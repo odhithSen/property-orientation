@@ -6,13 +6,22 @@ import math
 import time
 import os
 
-# Create output folder if it doesn't exist
-os.makedirs("../output", exist_ok=True)
+
+# Setup paths relative to script
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Input and output files
+input_file = os.path.join(script_dir, "../data/sample_addresses.csv")
+output_folder = os.path.join(script_dir, "../output")
+os.makedirs(output_folder, exist_ok=True)
+output_file = os.path.join(output_folder, "property_orientations.csv")
+
 
 # Initialize geolocator
 geolocator = Nominatim(user_agent="orientation_finder")
 
 
+# Helper functions
 def get_coords(address):
     """Get latitude and longitude for a given address."""
     try:
@@ -27,7 +36,7 @@ def get_coords(address):
 def get_nearest_road_bearing(lat, lon):
     """Find the nearest road and estimate its bearing."""
     try:
-        G = ox.graph_from_point((lat, lon), dist=50, network_type="drive")
+        G = ox.graph_from_point((lat, lon), dist=150, network_type="drive")
         edges = ox.graph_to_gdfs(G, nodes=False)
         nearest_edge = edges.iloc[0]
         geom = nearest_edge.geometry
@@ -59,8 +68,12 @@ def bearing_to_orientation(bearing):
     return directions[idx]
 
 
+# Main script
+if not os.path.exists(input_file):
+    print("Input file not found:", input_file)
+    exit()
+
 # Load input addresses
-input_file = "sample_addresses.csv"
 df = pd.read_csv(input_file)
 
 results = []
@@ -81,7 +94,6 @@ for address in df["Address"]:
     time.sleep(1)  # Respect API rate limits
 
 # Save output CSV
-output_file = "../output/property_orientations.csv"
 df_out = pd.DataFrame(results, columns=["Address", "Orientation"])
 df_out.to_csv(output_file, index=False)
 
